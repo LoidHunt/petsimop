@@ -1,7 +1,97 @@
-local args = {
-    [2] = workspace:WaitForChild("Entities"):WaitForChild("Titans"):WaitForChild("ColossalTitan"):WaitForChild("Humanoid"),
-    [3] = "&@&*&@&",
-    [4] = workspace:WaitForChild("Entities"):WaitForChild("Titans"):WaitForChild("ColossalTitan")
-}
-
-game:GetService("ReplicatedStorage"):WaitForChild("DamageEvent"):FireServer(unpack(args))
+while wait() do
+    pcall(function()
+        if PotionRandomizer == true then
+            Items = {}
+            for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
+                if v.ClassName == "TextLabel" then
+                    if v.Text == "YOUR CAULDRON" then
+                        for i,v1 in pairs(game:GetService("Workspace").Interactions[v.Parent.Parent.Parent.Name]:GetChildren()) do
+                            if v1.ClassName == "Model" then
+                                table.insert(Items,v1.Name)
+                            end
+                        end
+                    end
+                end
+            end
+            
+            for i,v1 in pairs(Items) do
+                local randomnumber = math.random(1,i)
+                for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
+                    if v.ClassName == "TextLabel" then
+                        if v.Text == "YOUR CAULDRON" then
+                            local args = {
+                                [1] = "PickUpItem",
+                                [2] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]],
+                            }
+                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+                            
+                            local args = {
+                                [1] = "FireAllClients",
+                                [2] = "WeldItemToHand",
+                                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]].Main.GripAttachment,
+                                [4] = workspace[game.Players.LocalPlayer.Name].RightHand.RightGripAttachment,
+                            }
+                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+                            
+                            local args = {
+                                [1] = "FireAllClients",
+                                [2] = "UnweldItemFromHand",
+                                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]].Main,
+                            }
+                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+                            
+                            local args = {
+                                [1] = "AddIngredientToCauldron",
+                                [2] = workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron,
+                                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]],
+                            }
+                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+                            
+                            local args = {
+                                [1] = "FireAllClients",
+                                [2] = "EmitParticles",
+                                [3] = workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron.Contents.ItemAdded,
+                                    [4] = {
+                                    ["Duration"] = 0.8,
+                                },
+                            }
+                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+                        end
+                    end
+                end
+            end
+            wait(3)
+            for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
+                if v.ClassName == "TextLabel" then
+                    if v.Text == "YOUR CAULDRON" then
+                        game:GetService("ReplicatedStorage").RemoteEvent:FireServer("AttemptBottlePotion",workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron)
+                    end
+                end
+            end
+            wait(3)
+            for i,v in pairs(workspace.Interactions:GetChildren()) do
+                local args = {
+                    [1] = "PickUpPotion",
+                    [2] = v,
+                }
+                
+                game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+            end
+            for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
+                if v.ClassName == "TextLabel" then
+                    if v.Text == "YOUR CAULDRON" then
+                        game:GetService("ReplicatedStorage").RemoteEvent:FireServer("AttemptDrainCauldron",workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron)
+                    end
+                end
+            end
+        end
+    end)
+    
+    spawn(function()
+        if AntiAfk == true then
+            local bb=game:service'VirtualUser'
+            bb:CaptureController()
+            bb:ClickButton2(Vector2.new())
+        end
+    end)
+end
