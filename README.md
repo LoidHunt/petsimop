@@ -1,8 +1,8 @@
 local lp = game.Players.LocalPlayer
 local function getNPC()
     local dist, thing = math.huge
-    for i,v in pairs(workspace["Aogiri Spawn"]:GetChildren()) do
-        if v.Name == "GhoulSpawns" then
+    for i,v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+        if v.Name == "Bandit [Lv. 5]" then
             local mag = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).magnitude
             if mag < dist then 
                 dist = mag 
