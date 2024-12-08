@@ -1,16 +1,25 @@
-local spawns = {
-    workspace["Aogiri Spawn"]:GetChildren()[7]["High Rank Aogiri Member"],
-    workspace["Aogiri Spawn"]:GetChildren()[6]["High Rank Aogiri Member"],
-    workspace["Aogiri Spawn"]:GetChildren()[5]["High Rank Aogiri Member"],
-    workspace["Aogiri Spawn"]:GetChildren()[4]["High Rank Aogiri Member"],
-    workspace["Aogiri Spawn"]:GetChildren()[3]["High Rank Aogiri Member"],
-    workspace["Aogiri Spawn"]:GetChildren()[2]["High Rank Aogiri Member"],
-    workspace["Aogiri Spawn"]:GetChildren()[1]["High Rank Aogiri Member"],
-    workspace["Aogiri Spawn"].GhoulSpawns["High Rank Aogiri Member"]
-}
-
-for _, spawn in ipairs(spawns) do
-    while wait(0.1) do
-        game.Players.LocalPlayer.Character:MoveTo(spawn.PrimaryPart.Position)
-    end
+while wait() do
+local players = game:GetService("Players")
+local char = players.LocalPlayer.Character
+local torso = char:FindFirstChild("Torso")
+function getNearbyAogiri()
+local aogiri = {}
+for _, v in ipairs(game:GetService("Workspace"):GetDescendants()) do
+if v.Name == "Mid Rank Aogiri Member" or v.Name == "Low Rank Aogiri Member" or v.Name == "High Rank Aogiri Member" then
+table.insert(aogiri, v)
+end
+end
+return aogiri
+end
+function teleportBehindAogiri()
+local aogiri = getNearbyAogiri()
+for _, v in ipairs(aogiri) do
+local rootPart = v:FindFirstChild("HumanoidRootPart")
+if rootPart then
+local charRootPart = char:FindFirstChild("HumanoidRootPart")
+charRootPart.CFrame = rootPart.CFrame * CFrame.new(0, 0, 7)
+end
+end
+end
+teleportBehindAogiri()
 end
