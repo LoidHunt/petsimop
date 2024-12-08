@@ -8,9 +8,7 @@ local args = {
 }
 
 game:GetService("Players").LocalPlayer.Character.Remotes.KeyEvent:FireServer(unpack(args))
-end
 
-while wait() do
 local players = game:GetService("Players")
 local char = players.LocalPlayer.Character
 local torso = char:FindFirstChild("Torso")
