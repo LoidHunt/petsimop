@@ -1,0 +1,17 @@
+function RemoveLimbs()
+	--// Teleport old parts away
+	local OldLocation = Root.CFrame
+	Root.CFrame = CFrame.new(0,10^5,0)
+
+	--// Remove body limbs
+	for _, limb in next, Character:GetChildren() do
+		if not limb:IsA("BasePart") then continue  end
+
+		if limb.Name:find("Leg") or limb.Name:find("Arm") then
+			limb:Remove()
+		end
+	end
+	wait()
+
+	Root.CFrame = OldLocation
+end
