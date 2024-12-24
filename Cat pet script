@@ -67,12 +67,6 @@ local function startFollow()
     local playerName = playerNameBox.Text
     local player = game.Players:FindFirstChild(playerName)
     if player and player.Character then
-        -- Teleport head to void first
-        local localPlayer = game.Players.LocalPlayer
-        if localPlayer and localPlayer.Character and localPlayer.Character:FindFirstChild("Head") then
-            localPlayer.Character.Head.CFrame = CFrame.new(0, -1000, 0)
-        end
-        
         local startPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, -10, -1)
         local endPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
         
@@ -92,11 +86,6 @@ local function startFollow()
         
         followConnection = game:GetService("RunService").Heartbeat:Connect(function()
             if player and player.Character then
-                -- Keep head in void while following
-                if localPlayer and localPlayer.Character and localPlayer.Character:FindFirstChild("Head") then
-                    localPlayer.Character.Head.CFrame = CFrame.new(0, -1000, 0)
-                end
-                
                 local targetCFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
                 game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(
                     targetCFrame.Position,
@@ -111,12 +100,6 @@ local function stopFollow()
     if followConnection then
         followConnection:Disconnect()
         followConnection = nil
-        
-        -- Reset head position when stopping
-        local localPlayer = game.Players.LocalPlayer
-        if localPlayer and localPlayer.Character and localPlayer.Character:FindFirstChild("Head") then
-            localPlayer.Character.Head.CFrame = localPlayer.Character.HumanoidRootPart.CFrame
-        end
     end
 end
 
