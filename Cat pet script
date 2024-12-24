@@ -6,14 +6,21 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 100)
-frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+frame.Size = UDim2.new(0, 200, 0, 150) -- Made taller for text box
+frame.Position = UDim2.new(0.5, -100, 0.5, -75)
 frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 frame.Parent = screenGui
 
+local playerNameBox = Instance.new("TextBox")
+playerNameBox.Size = UDim2.new(0, 150, 0, 30)
+playerNameBox.Position = UDim2.new(0.5, -75, 0.25, -15)
+playerNameBox.Text = ""
+playerNameBox.PlaceholderText = "Enter Player Name"
+playerNameBox.Parent = frame
+
 local toggleButton = Instance.new("TextButton")
 toggleButton.Size = UDim2.new(0, 150, 0, 30)
-toggleButton.Position = UDim2.new(0.5, -75, 0.5, -15)
+toggleButton.Position = UDim2.new(0.5, -75, 0.65, -15)
 toggleButton.Text = "Toggle Follow"
 toggleButton.Parent = frame
 
@@ -57,7 +64,8 @@ local isFollowing = false
 local followConnection = nil
 
 local function startFollow()
-    local player = game.Players:FindFirstChild("gold300300")
+    local playerName = playerNameBox.Text
+    local player = game.Players:FindFirstChild(playerName)
     if player and player.Character then
         local startPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, -10, -1)
         local endPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
@@ -96,6 +104,13 @@ local function stopFollow()
 end
 
 toggleButton.MouseButton1Click:Connect(function()
+    if playerNameBox.Text == "" then
+        toggleButton.Text = "Enter a player name!"
+        wait(2)
+        toggleButton.Text = "Toggle Follow"
+        return
+    end
+    
     isFollowing = not isFollowing
     if isFollowing then
         toggleButton.Text = "Stop Following"
