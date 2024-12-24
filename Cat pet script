@@ -1,0 +1,107 @@
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Create GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 100)
+frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.Parent = screenGui
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 150, 0, 30)
+toggleButton.Position = UDim2.new(0.5, -75, 0.5, -15)
+toggleButton.Text = "Toggle Follow"
+toggleButton.Parent = frame
+
+-- Make GUI draggable
+local isDragging = false
+local dragStart = nil
+local startPos = nil
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        updateDrag(input)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+-- Follow script functionality
+local isFollowing = false
+local followConnection = nil
+
+local function startFollow()
+    local player = game.Players:FindFirstChild("gold300300")
+    if player and player.Character then
+        local startPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, -10, -1)
+        local endPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
+        
+        local tweenInfo = TweenInfo.new(
+            1,
+            Enum.EasingStyle.Linear
+        )
+        
+        local tween = TweenService:Create(
+            game.Players.LocalPlayer.Character.HumanoidRootPart,
+            tweenInfo,
+            {CFrame = endPos}
+        )
+        
+        tween:Play()
+        tween.Completed:Wait()
+        
+        followConnection = game:GetService("RunService").Heartbeat:Connect(function()
+            if player and player.Character then
+                local targetCFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(
+                    targetCFrame.Position,
+                    targetCFrame.Position + player.Character.HumanoidRootPart.CFrame.LookVector
+                )
+            end
+        end)
+    end
+end
+
+local function stopFollow()
+    if followConnection then
+        followConnection:Disconnect()
+        followConnection = nil
+    end
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+    isFollowing = not isFollowing
+    if isFollowing then
+        toggleButton.Text = "Stop Following"
+        startFollow()
+    else
+        toggleButton.Text = "Start Following"
+        stopFollow()
+    end
+end)
