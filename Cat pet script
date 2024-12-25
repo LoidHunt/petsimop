@@ -1,70 +1,11 @@
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 150) -- Made taller for text box
-frame.Position = UDim2.new(0.5, -100, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-frame.Parent = screenGui
-
-local playerNameBox = Instance.new("TextBox")
-playerNameBox.Size = UDim2.new(0, 150, 0, 30)
-playerNameBox.Position = UDim2.new(0.5, -75, 0.25, -15)
-playerNameBox.Text = ""
-playerNameBox.PlaceholderText = "Enter Player Name"
-playerNameBox.Parent = frame
-
-local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0, 150, 0, 30)
-toggleButton.Position = UDim2.new(0.5, -75, 0.65, -15)
-toggleButton.Text = "Toggle Follow"
-toggleButton.Parent = frame
-
--- Make GUI draggable
-local isDragging = false
-local dragStart = nil
-local startPos = nil
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    frame.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDragging = true
-        dragStart = input.Position
-        startPos = frame.Position
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        updateDrag(input)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDragging = false
-    end
-end)
-
 -- Follow script functionality
 local isFollowing = false
 local followConnection = nil
 
-local function startFollow()
-    local playerName = playerNameBox.Text
+local function startFollow(playerName)
     local player = game.Players:FindFirstChild(playerName)
     if player and player.Character then
         local startPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, -10, -1)
@@ -100,23 +41,22 @@ local function stopFollow()
     if followConnection then
         followConnection:Disconnect()
         followConnection = nil
+        isFollowing = false
     end
 end
 
-toggleButton.MouseButton1Click:Connect(function()
-    if playerNameBox.Text == "" then
-        toggleButton.Text = "Enter a player name!"
-        wait(2)
-        toggleButton.Text = "Toggle Follow"
-        return
-    end
+game.Players.LocalPlayer.Chatted:Connect(function(message)
+    local split = message:split(" ")
     
-    isFollowing = not isFollowing
-    if isFollowing then
-        toggleButton.Text = "Stop Following"
-        startFollow()
-    else
-        toggleButton.Text = "Start Following"
-        stopFollow()
+    if split[1] == ";cat" then
+        if split[2] == "follow" and split[3] then
+            if isFollowing then
+                stopFollow()
+            end
+            isFollowing = true
+            startFollow(split[3])
+        elseif split[2] == "stop" then
+            stopFollow()
+        end
     end
 end)
