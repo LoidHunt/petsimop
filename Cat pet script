@@ -1,12 +1,13 @@
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 -- Create GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 150) -- Made taller for text box
+frame.Size = UDim2.new(0, 200, 0, 150)
 frame.Position = UDim2.new(0.5, -100, 0.5, -75)
 frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 frame.Parent = screenGui
@@ -66,34 +67,64 @@ local followConnection = nil
 local function startFollow()
     local playerName = playerNameBox.Text
     local player = game.Players:FindFirstChild(playerName)
-    if player and player.Character then
-        local startPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, -10, -1)
-        local endPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
-        
-        local tweenInfo = TweenInfo.new(
-            1,
-            Enum.EasingStyle.Linear
-        )
-        
-        local tween = TweenService:Create(
-            game.Players.LocalPlayer.Character.HumanoidRootPart,
-            tweenInfo,
-            {CFrame = endPos}
-        )
-        
-        tween:Play()
-        tween.Completed:Wait()
-        
-        followConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            if player and player.Character then
-                local targetCFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
-                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(
-                    targetCFrame.Position,
-                    targetCFrame.Position + player.Character.HumanoidRootPart.CFrame.LookVector
-                )
-            end
-        end)
+    
+    if not player then
+        toggleButton.Text = "Player not found!"
+        task.wait(2)
+        toggleButton.Text = "Toggle Follow"
+        isFollowing = false
+        return
     end
+    
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        toggleButton.Text = "Wait for character..."
+        task.wait(2)
+        toggleButton.Text = "Toggle Follow"
+        isFollowing = false
+        return
+    end
+    
+    local localPlayer = game.Players.LocalPlayer
+    if not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        toggleButton.Text = "Wait for your character..."
+        task.wait(2)
+        toggleButton.Text = "Toggle Follow"
+        isFollowing = false
+        return
+    end
+    
+    local startPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, -10, -1)
+    local endPos = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
+    
+    local tweenInfo = TweenInfo.new(
+        1,
+        Enum.EasingStyle.Linear
+    )
+    
+    local tween = TweenService:Create(
+        localPlayer.Character.HumanoidRootPart,
+        tweenInfo,
+        {CFrame = endPos}
+    )
+    
+    tween:Play()
+    tween.Completed:Wait()
+    
+    followConnection = RunService.Heartbeat:Connect(function()
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or
+           not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            stopFollow()
+            toggleButton.Text = "Toggle Follow"
+            isFollowing = false
+            return
+        end
+        
+        local targetCFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -1)
+        localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(
+            targetCFrame.Position,
+            targetCFrame.Position + player.Character.HumanoidRootPart.CFrame.LookVector
+        )
+    end)
 end
 
 local function stopFollow()
@@ -106,7 +137,7 @@ end
 toggleButton.MouseButton1Click:Connect(function()
     if playerNameBox.Text == "" then
         toggleButton.Text = "Enter a player name!"
-        wait(2)
+        task.wait(2)
         toggleButton.Text = "Toggle Follow"
         return
     end
