@@ -1,0 +1,50 @@
+while wait() do
+local functionInfo = {
+    ["script"] = {
+        ["SourceScript"] = game:GetService("Players").LocalPlayer:WaitForChild("OpeningLocalScript"),
+        ["CallingScript"] = game:GetService("Players").LocalPlayer:WaitForChild("OpeningLocalScript")
+    },
+    ["upvalues"] = {
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"),
+        {
+            ["PlayUpgradeDoubleLuckAnim"] = function() end,
+            ["UpdateDoubleLuck"] = function() end,
+            ["LuckDoublerPowerIndex"] = 0,
+            ["TimeLeftDoubleLuck"] = 0,
+            ["RunTimer"] = function() end
+        },
+        game:GetService("Players").LocalPlayer:WaitForChild("ExtraLuckTextLabel"),
+        game:GetService("ReplicatedStorage"):WaitForChild("Sounds")
+    },
+    ["info"] = {
+        ["source"] = "=Players.GPTbot_1.PlayerGui.OpeningGui.OpeningLocalScript",
+        ["what"] = "Lua",
+        ["numparams"] = 0,
+        ["func"] = function() return 100000 end,
+        ["short_src"] = "Players.GPTbot_1.PlayerGui.OpeningGui.OpeningLocalScript",
+        ["currentline"] = 34,
+        ["name"] = "checkLuckFactor",
+        ["is_vararg"] = 0,
+        ["nups"] = 4
+    },
+    ["constants"] = {
+        "Opening",
+        "GiveLuckFactor",
+        "InvokeServer", 
+        "luckFactor",
+        100000,
+        "math",
+        "round",
+        ["LuckDoublerPowerIndex"] = 9,
+        "Visible",
+        "+",
+        "tostring",
+        " Luck",
+        "Text",
+        "UI",
+        "UI_Luck",
+        "Play"
+    }
+}
+
+end
