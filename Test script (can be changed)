@@ -1,50 +1,28 @@
-while wait() do
-local functionInfo = {
-    ["script"] = {
-        ["SourceScript"] = game:GetService("Players").LocalPlayer:WaitForChild("OpeningLocalScript"),
-        ["CallingScript"] = game:GetService("Players").LocalPlayer:WaitForChild("OpeningLocalScript")
-    },
-    ["upvalues"] = {
-        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"),
-        {
-            ["PlayUpgradeDoubleLuckAnim"] = function() end,
-            ["UpdateDoubleLuck"] = function() end,
-            ["LuckDoublerPowerIndex"] = 0,
-            ["TimeLeftDoubleLuck"] = 0,
-            ["RunTimer"] = function() end
-        },
-        game:GetService("Players").LocalPlayer:WaitForChild("ExtraLuckTextLabel"),
-        game:GetService("ReplicatedStorage"):WaitForChild("Sounds")
-    },
-    ["info"] = {
-        ["source"] = "=Players.GPTbot_1.PlayerGui.OpeningGui.OpeningLocalScript",
-        ["what"] = "Lua",
-        ["numparams"] = 0,
-        ["func"] = function() return 100000 end,
-        ["short_src"] = "Players.GPTbot_1.PlayerGui.OpeningGui.OpeningLocalScript",
-        ["currentline"] = 34,
-        ["name"] = "checkLuckFactor",
-        ["is_vararg"] = 0,
-        ["nups"] = 4
-    },
-    ["constants"] = {
-        "Opening",
-        "GiveLuckFactor",
-        "InvokeServer", 
-        "luckFactor",
-        100000,
-        "math",
-        "round",
-        ["LuckDoublerPowerIndex"] = 9,
-        "Visible",
-        "+",
-        "tostring",
-        " Luck",
-        "Text",
-        "UI",
-        "UI_Luck",
-        "Play"
-    }
-}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemoteEvent = ReplicatedStorage.RemoteEvent
 
+-- Helper function to fire remote event
+local function fireRemote(...)
+    RemoteEvent:FireServer(...)
 end
+
+-- Pick up fairy
+fireRemote("PickUpItem", .Fairy)
+
+-- Weld fairy to hand
+fireRemote("FireAllClients", "WeldItemToHand", .GripAttachment, workspace.GPTbot_1.RightHand.RightGripAttachment)
+
+-- Unweld fairy from hand
+fireRemote("FireAllClients", "UnweldItemFromHand", .Main)
+
+-- Add fairy to cauldron
+local cauldron = workspace.PlayerCauldrons.PlayerCauldron7.CauldronSet.Cauldron
+fireRemote("AddIngredientToCauldron", cauldron, .Fairy)
+
+-- Bottle the potion
+fireRemote("AttemptBottlePotion", cauldron)
+
+-- Emit particles
+fireRemote("FireAllClients", "EmitParticles", cauldron.Contents.ItemAdded, {
+    Duration = 0.8
+})
