@@ -9,6 +9,7 @@ local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
 local PotionRandomizer = Instance.new("TextButton")
 local BlacklistButton = Instance.new("TextButton")
+local AutoBlockButton = Instance.new("TextButton")
 local BlacklistFrame = Instance.new("Frame")
 local BlacklistScrollFrame = Instance.new("ScrollingFrame")
 local BlacklistLayout = Instance.new("UIListLayout")
@@ -71,6 +72,17 @@ BlacklistButton.Text = "Blacklist"
 BlacklistButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 BlacklistButton.TextSize = 14
 
+AutoBlockButton.Name = "AutoBlockButton"
+AutoBlockButton.Parent = MainFrame
+AutoBlockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+AutoBlockButton.BorderSizePixel = 0
+AutoBlockButton.Position = UDim2.new(0.1, 0, 0.55, 0)
+AutoBlockButton.Size = UDim2.new(0.8, 0, 0, 30)
+AutoBlockButton.Font = Enum.Font.SourceSans
+AutoBlockButton.Text = "Auto Block: ON"
+AutoBlockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoBlockButton.TextSize = 14
+
 BlacklistFrame.Name = "BlacklistFrame"
 BlacklistFrame.Parent = MainFrame
 BlacklistFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -104,6 +116,7 @@ BlacklistLayout.Parent = BlacklistScrollFrame
 BlacklistLayout.Padding = UDim.new(0, 2)
 
 local PotionRandomizerEnabled = false
+local AutoBlockEnabled = true
 local Items = {}
 local BlacklistedItems = {
     ["Acid Barrel"] = true,
@@ -115,7 +128,23 @@ local BlacklistedItems = {
     ["Dynamite"] = true,
     ["Chilli"] = true,
     ["Mushroom"] = true,
-    ["Egyptian Head"] = true
+    ["Egyptian Head"] = true,
+    ["Slime Bucket"] = true,
+    ["Greek Helmet"] = true,
+    ["Shield"] = true,
+    ["2022 Pumpkin"] = true,
+    ["Beans"] = true,
+    ["Hacker"] = true,
+    ["Superhero Cape"] = true,
+    ["Anime Sword of Destiny"] = true,
+    ["Magic Seed"] = true,
+    ["Hat of Gears"] = true,
+    ["Wheel"] = true,
+    ["Cloud"] = true,
+    ["Hacker"] = true,
+    ["Mr. Cauldron"] = true,
+    ["Snake Head"] = true,
+    ["Airstrike"] = true
 }
 local RemoteEvent = ReplicatedStorage.RemoteEvent
 
@@ -155,6 +184,11 @@ PotionRandomizer.MouseButton1Click:Connect(function()
     PotionRandomizer.Text = "Potion Randomizer: " .. (PotionRandomizerEnabled and "ON" or "OFF")
 end)
 
+AutoBlockButton.MouseButton1Click:Connect(function()
+    AutoBlockEnabled = not AutoBlockEnabled
+    AutoBlockButton.Text = "Auto Block: " .. (AutoBlockEnabled and "ON" or "OFF")
+end)
+
 BlacklistButton.MouseButton1Click:Connect(function()
     BlacklistFrame.Visible = not BlacklistFrame.Visible
 end)
@@ -179,8 +213,10 @@ local function UpdateBlacklistUI(items)
             button.Parent = BlacklistScrollFrame
             
             button.MouseButton1Click:Connect(function()
-                BlacklistedItems[itemName] = not BlacklistedItems[itemName]
-                button.BackgroundColor3 = BlacklistedItems[itemName] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(40, 40, 40)
+                if AutoBlockEnabled then
+                    BlacklistedItems[itemName] = not BlacklistedItems[itemName]
+                    button.BackgroundColor3 = BlacklistedItems[itemName] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(40, 40, 40)
+                end
             end)
         end
     end
