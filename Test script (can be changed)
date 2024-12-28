@@ -148,7 +148,7 @@ local BlacklistedItems = {
     ["Evil Head"] = true,
     ["Tumble Weed"] = true,
     ["Zeus's Beard"] = true,
-    ["Airstrike"] = true
+    ["AirStrike"] = true
 }
 local RemoteEvent = ReplicatedStorage.RemoteEvent
 
