@@ -134,14 +134,6 @@ spawn(function()
             end
             
             wait(3)
-            RemoteEvent:FireServer("AttemptBottlePotion", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
-            
-            wait(3)
-            for _, v in pairs(Workspace.Interactions:GetChildren()) do
-                RemoteEvent:FireServer("PickUpPotion", v)
-            end
-            
-            RemoteEvent:FireServer("AttemptDrainCauldron", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
         end)
     end
 end)
