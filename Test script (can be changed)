@@ -1,37 +1,46 @@
--- Optimized Remote Event Calls
+-- Services and References
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RemoteEvent = ReplicatedStorage.RemoteEvent
 local Workspace = game:GetService("Workspace")
 
-local function fireServer(...)
-    RemoteEvent:FireServer(...)
-end
-
--- Cauldron reference
+-- Cache frequently used references
 local cauldron = workspace.PlayerCauldrons.PlayerCauldron7.CauldronSet.Cauldron
+local rightGripAttachment = workspace.GPTbot_1.RightHand.RightGripAttachment
+local cauldronContents = cauldron.Contents
 
--- Pick up fairy item
-fireServer("PickUpItem", .Fairy) -- Note: Fairy instance needs to be properly referenced
+-- Create a table of common remote calls
+local RemoteCalls = {
+    PickUpItem = function(fairy)
+        RemoteEvent:FireServer("PickUpItem", fairy)
+    end,
+    
+    WeldToHand = function(gripAttachment)
+        RemoteEvent:FireServer("FireAllClients", "WeldItemToHand", 
+            gripAttachment,
+            rightGripAttachment
+        )
+    end,
+    
+    UnweldFromHand = function(main)
+        RemoteEvent:FireServer("FireAllClients", "UnweldItemFromHand", main)
+    end,
+    
+    AddToCauldron = function(fairy)
+        RemoteEvent:FireServer("AddIngredientToCauldron", cauldron, fairy)
+    end
+}
 
--- Weld item to hand
-fireServer("FireAllClients", "WeldItemToHand", 
-    .GripAttachment, -- Note: GripAttachment needs proper reference
-    workspace.GPTbot_1.RightHand.RightGripAttachment
-)
-
--- Unweld item from hand
-fireServer("FireAllClients", "UnweldItemFromHand", 
-    .Main -- Note: Main instance needs proper reference
-)
-
--- Add ingredient to cauldron
-fireServer("AddIngredientToCauldron", cauldron, .Fairy)
-
--- Attempt to bottle potion
-fireServer("AttemptBottlePotion", cauldron)
-
--- Emit particles
-fireServer("FireAllClients", "EmitParticles", 
-    cauldron.Contents.ItemAdded, 
-    {Duration = 0.8}
-)
+-- Execute potion making sequence
+local function makeFairyPotion(fairy, gripAttachment, main)
+    RemoteCalls.PickUpItem(fairy)
+    RemoteCalls.WeldToHand(gripAttachment)
+    RemoteCalls.UnweldFromHand(main)
+    RemoteCalls.AddToCauldron(fairy)
+    
+    -- Bottle and effects
+    RemoteEvent:FireServer("AttemptBottlePotion", cauldron)
+    RemoteEvent:FireServer("FireAllClients", "EmitParticles", 
+        cauldronContents.ItemAdded,
+        {Duration = 0.8}
+    )
+end
