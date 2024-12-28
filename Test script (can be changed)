@@ -1,161 +1,204 @@
--- Create GUI elements
-local gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 300, 0, 400)
-frame.Position = UDim2.new(0.5, -150, 0.5, -200)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-frame.BorderSizePixel = 0
-
-local titleBar = Instance.new("Frame", frame)
-titleBar.Size = UDim2.new(1, 0, 0, 30)
-titleBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-titleBar.BorderSizePixel = 0
-
-local title = Instance.new("TextLabel", titleBar)
-title.Size = UDim2.new(1, 0, 1, 0)
-title.BackgroundTransparency = 1
-title.Text = "Wacky Wizards"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 18
-title.Font = Enum.Font.SourceSansBold
-
-local scrollFrame = Instance.new("ScrollingFrame", frame)
-scrollFrame.Size = UDim2.new(1, -20, 0.7, 0)
-scrollFrame.Position = UDim2.new(0, 10, 0, 40)
-scrollFrame.BackgroundTransparency = 1
-scrollFrame.ScrollBarThickness = 6
-
--- Variables
-local SelectedItem = "Brain"
-local Items = {}
-local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local PotionRandomizer = Instance.new("TextButton")
+local BlacklistButton = Instance.new("TextButton")
+local BlacklistFrame = Instance.new("Frame")
+local BlacklistScrollFrame = Instance.new("ScrollingFrame")
+local BlacklistLayout = Instance.new("UIListLayout")
+local CloseButton = Instance.new("TextButton")
+local Dragging = false
+local DragStart = nil
+local StartPos = nil
+
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 200, 0, 140)
+
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.BorderSizePixel = 0
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "Wacky Wizards"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = Title
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+CloseButton.BorderSizePixel = 0
+CloseButton.Position = UDim2.new(0.9, 0, 0.1, 0)
+CloseButton.Size = UDim2.new(0, 20, 0, 20)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 14
+
+PotionRandomizer.Name = "PotionRandomizer"
+PotionRandomizer.Parent = MainFrame
+PotionRandomizer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+PotionRandomizer.BorderSizePixel = 0
+PotionRandomizer.Position = UDim2.new(0.1, 0, 0.4, 0)
+PotionRandomizer.Size = UDim2.new(0.8, 0, 0, 30)
+PotionRandomizer.Font = Enum.Font.SourceSans
+PotionRandomizer.Text = "Potion Randomizer: OFF"
+PotionRandomizer.TextColor3 = Color3.fromRGB(255, 255, 255)
+PotionRandomizer.TextSize = 14
+
+BlacklistButton.Name = "BlacklistButton"
+BlacklistButton.Parent = MainFrame
+BlacklistButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BlacklistButton.BorderSizePixel = 0
+BlacklistButton.Position = UDim2.new(0.1, 0, 0.7, 0)
+BlacklistButton.Size = UDim2.new(0.8, 0, 0, 30)
+BlacklistButton.Font = Enum.Font.SourceSans
+BlacklistButton.Text = "Черный список"
+BlacklistButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+BlacklistButton.TextSize = 14
+
+BlacklistFrame.Name = "BlacklistFrame"
+BlacklistFrame.Parent = MainFrame
+BlacklistFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+BlacklistFrame.BorderSizePixel = 0
+BlacklistFrame.Position = UDim2.new(1.1, 0, 0, 0)
+BlacklistFrame.Size = UDim2.new(0, 150, 0, 200)
+BlacklistFrame.Visible = false
+
+BlacklistScrollFrame.Name = "BlacklistScrollFrame"
+BlacklistScrollFrame.Parent = BlacklistFrame
+BlacklistScrollFrame.BackgroundTransparency = 1
+BlacklistScrollFrame.Size = UDim2.new(1, 0, 1, 0)
+BlacklistScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+BlacklistScrollFrame.ScrollBarThickness = 6
+BlacklistScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+BlacklistLayout.Parent = BlacklistScrollFrame
+BlacklistLayout.Padding = UDim.new(0, 2)
+
+local PotionRandomizerEnabled = false
+local Items = {}
+local BlacklistedItems = {}
 local RemoteEvent = ReplicatedStorage.RemoteEvent
 
--- Get items
-for _,cauldron in ipairs(Workspace.PlayerCauldrons:GetDescendants()) do
-    if cauldron:IsA("TextLabel") and cauldron.Text == "YOUR CAULDRON" then
-        local playerName = cauldron.Parent.Parent.Parent.Name
-        for _,item in ipairs(Workspace.Interactions[playerName]:GetChildren()) do
-            if item:IsA("Model") then
-                table.insert(Items, item.Name)
-            end
-        end
-        break
-    end
-end
-
--- Create item buttons
-local buttonHeight = 30
-local padding = 5
-
-for i, item in ipairs(Items) do
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -10, 0, buttonHeight)
-    button.Position = UDim2.new(0, 5, 0, (i-1) * (buttonHeight + padding))
-    button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    button.Text = item
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Font = Enum.Font.SourceSans
-    button.TextSize = 14
-    button.Parent = scrollFrame
-    
-    button.MouseButton1Click:Connect(function()
-        SelectedItem = item
-        for _, btn in ipairs(scrollFrame:GetChildren()) do
-            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        end
-        button.BackgroundColor3 = Color3.fromRGB(80, 120, 80)
-    end)
-end
-
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, (#Items * (buttonHeight + padding)))
-
--- Helper function to find player cauldron
-local function getPlayerCauldron()
-    for _,v in ipairs(Workspace.PlayerCauldrons:GetDescendants()) do
-        if v:IsA("TextLabel") and v.Text == "YOUR CAULDRON" then
-            return v.Parent.Parent.Parent.Name
-        end
-    end
-end
-
--- Create action buttons
-local function createActionButton(text, position, callback)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.8, 0, 0, 35)
-    button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
-    button.Text = text
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Font = Enum.Font.SourceSansBold
-    button.TextSize = 16
-    button.Parent = frame
-    button.MouseButton1Click:Connect(callback)
-    return button
-end
-
--- Add action buttons
-createActionButton("Put Into Cauldron", UDim2.new(0.1, 0, 0.75, 0), function()
-    local playerName = getPlayerCauldron()
-    if not playerName then return end
-    
-    local selectedModel = Workspace.Interactions[playerName][SelectedItem]
-    local cauldron = Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron
-    
-    RemoteEvent:FireServer("PickUpItem", selectedModel)
-    RemoteEvent:FireServer("FireAllClients", "WeldItemToHand", selectedModel.Main.GripAttachment, Workspace[game.Players.LocalPlayer.Name].RightHand.RightGripAttachment)
-    RemoteEvent:FireServer("FireAllClients", "UnweldItemFromHand", selectedModel.Main)
-    RemoteEvent:FireServer("AddIngredientToCauldron", cauldron, selectedModel)
-    RemoteEvent:FireServer("FireAllClients", "EmitParticles", cauldron.Contents.ItemAdded, {Duration = 0.8})
-end)
-
-createActionButton("Spawn Potion", UDim2.new(0.1, 0, 0.85, 0), function()
-    local playerName = getPlayerCauldron()
-    if playerName then
-        RemoteEvent:FireServer("AttemptBottlePotion", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
-    end
-end)
-
-createActionButton("Drain Cauldron", UDim2.new(0.1, 0, 0.95, 0), function()
-    for _,v in ipairs(Workspace.Interactions:GetChildren()) do
-        RemoteEvent:FireServer("PickUpPotion", v)
-    end
-    
-    local playerName = getPlayerCauldron()
-    if playerName then
-        RemoteEvent:FireServer("AttemptDrainCauldron", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
-    end
-end)
-
 -- Make GUI draggable
-local UserInputService = game:GetService("UserInputService")
-local dragging, dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-titleBar.InputBegan:Connect(function(input)
+Title.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = frame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
+        Dragging = true
+        DragStart = input.Position
+        StartPos = MainFrame.Position
+    end
+end)
+
+Title.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        Dragging = false
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    elseif input == dragInput and dragging then
-        update(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and Dragging then
+        local delta = input.Position - DragStart
+        MainFrame.Position = UDim2.new(
+            StartPos.X.Scale, 
+            StartPos.X.Offset + delta.X,
+            StartPos.Y.Scale, 
+            StartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+PotionRandomizer.MouseButton1Click:Connect(function()
+    PotionRandomizerEnabled = not PotionRandomizerEnabled
+    PotionRandomizer.Text = "Potion Randomizer: " .. (PotionRandomizerEnabled and "ON" or "OFF")
+end)
+
+BlacklistButton.MouseButton1Click:Connect(function()
+    BlacklistFrame.Visible = not BlacklistFrame.Visible
+end)
+
+local function UpdateBlacklistUI(items)
+    for i,v in pairs(BlacklistScrollFrame:GetChildren()) do
+        if v:IsA("TextButton") then
+            v:Destroy()
+        end
+    end
+    
+    for _, itemName in pairs(items) do
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, -10, 0, 25)
+        button.Position = UDim2.new(0, 5, 0, 0)
+        button.BackgroundColor3 = BlacklistedItems[itemName] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(40, 40, 40)
+        button.BorderSizePixel = 0
+        button.Text = itemName
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.Parent = BlacklistScrollFrame
+        
+        button.MouseButton1Click:Connect(function()
+            BlacklistedItems[itemName] = not BlacklistedItems[itemName]
+            button.BackgroundColor3 = BlacklistedItems[itemName] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(40, 40, 40)
+        end)
+    end
+end
+
+local function FindPlayerCauldron()
+    for _, v in pairs(Workspace.PlayerCauldrons:GetDescendants()) do
+        if v.ClassName == "TextLabel" and v.Text == "YOUR CAULDRON" then
+            return v.Parent.Parent.Parent.Name
+        end
+    end
+    return nil
+end
+
+spawn(function()
+    while wait(0.1) do
+        if not PotionRandomizerEnabled then continue end
+        
+        pcall(function()
+            local playerName = FindPlayerCauldron()
+            if not playerName then return end
+            
+            -- Collect items
+            Items = {}
+            for _, v in pairs(Workspace.Interactions[playerName]:GetChildren()) do
+                if v.ClassName == "Model" and not BlacklistedItems[v.Name] then
+                    table.insert(Items, v.Name)
+                end
+            end
+            
+            UpdateBlacklistUI(Items)
+            
+            -- Add random ingredients
+            for i, _ in pairs(Items) do
+                local randomItem = Items[math.random(1, i)]
+                local itemPath = Workspace.Interactions[playerName][randomItem]
+                local cauldronPath = Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron
+                
+                RemoteEvent:FireServer("PickUpItem", itemPath)
+                RemoteEvent:FireServer("FireAllClients", "WeldItemToHand", itemPath.Main.GripAttachment, Workspace[LocalPlayer.Name].RightHand.RightGripAttachment)
+                RemoteEvent:FireServer("FireAllClients", "UnweldItemFromHand", itemPath.Main)
+                RemoteEvent:FireServer("AddIngredientToCauldron", cauldronPath, itemPath)
+                RemoteEvent:FireServer("FireAllClients", "EmitParticles", cauldronPath.Contents.ItemAdded, {Duration = 0.8})
+            end
+            
+            wait(3)
+        end)
     end
 end)
