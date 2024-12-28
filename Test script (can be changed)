@@ -1,53 +1,48 @@
--- Create ScreenGui
-local gui = Instance.new("ScreenGui")
-gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+-- Create GUI elements
+local gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
 
--- Create main frame
-local frame = Instance.new("Frame")
+local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 300, 0, 400)
 frame.Position = UDim2.new(0.5, -150, 0.5, -200)
 frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 frame.BorderSizePixel = 0
-frame.Parent = gui
 
--- Create title bar
-local titleBar = Instance.new("Frame")
+local titleBar = Instance.new("Frame", frame)
 titleBar.Size = UDim2.new(1, 0, 0, 30)
 titleBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 titleBar.BorderSizePixel = 0
-titleBar.Parent = frame
 
-local title = Instance.new("TextLabel")
+local title = Instance.new("TextLabel", titleBar)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.BackgroundTransparency = 1
 title.Text = "Wacky Wizards"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 18
 title.Font = Enum.Font.SourceSansBold
-title.Parent = titleBar
 
--- Create scrolling container for items
-local scrollFrame = Instance.new("ScrollingFrame")
+local scrollFrame = Instance.new("ScrollingFrame", frame)
 scrollFrame.Size = UDim2.new(1, -20, 0.7, 0)
 scrollFrame.Position = UDim2.new(0, 10, 0, 40)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.ScrollBarThickness = 6
-scrollFrame.Parent = frame
 
 -- Variables
-SelectedItem = "Brain"
-Items = {}
+local SelectedItem = "Brain"
+local Items = {}
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemoteEvent = ReplicatedStorage.RemoteEvent
 
 -- Get items
-for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-    if v.ClassName == "TextLabel" then
-        if v.Text == "YOUR CAULDRON" then
-            for i,v1 in pairs(game:GetService("Workspace").Interactions[v.Parent.Parent.Parent.Name]:GetChildren()) do
-                if v1.ClassName == "Model" then
-                    table.insert(Items,v1.Name)
-                end
+for _,cauldron in ipairs(Workspace.PlayerCauldrons:GetDescendants()) do
+    if cauldron:IsA("TextLabel") and cauldron.Text == "YOUR CAULDRON" then
+        local playerName = cauldron.Parent.Parent.Parent.Name
+        for _,item in ipairs(Workspace.Interactions[playerName]:GetChildren()) do
+            if item:IsA("Model") then
+                table.insert(Items, item.Name)
             end
         end
+        break
     end
 end
 
@@ -77,6 +72,15 @@ end
 
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, (#Items * (buttonHeight + padding)))
 
+-- Helper function to find player cauldron
+local function getPlayerCauldron()
+    for _,v in ipairs(Workspace.PlayerCauldrons:GetDescendants()) do
+        if v:IsA("TextLabel") and v.Text == "YOUR CAULDRON" then
+            return v.Parent.Parent.Parent.Name
+        end
+    end
+end
+
 -- Create action buttons
 local function createActionButton(text, position, callback)
     local button = Instance.new("TextButton")
@@ -94,73 +98,40 @@ end
 
 -- Add action buttons
 createActionButton("Put Into Cauldron", UDim2.new(0.1, 0, 0.75, 0), function()
-    for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-        if v.ClassName == "TextLabel" and v.Text == "YOUR CAULDRON" then
-            local args = {
-                [1] = "PickUpItem",
-                [2] = workspace.Interactions[v.Parent.Parent.Parent.Name][SelectedItem],
-            }
-            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-            
-            args = {
-                [1] = "FireAllClients",
-                [2] = "WeldItemToHand",
-                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][SelectedItem].Main.GripAttachment,
-                [4] = workspace[game.Players.LocalPlayer.Name].RightHand.RightGripAttachment,
-            }
-            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-            
-            args = {
-                [1] = "FireAllClients",
-                [2] = "UnweldItemFromHand", 
-                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][SelectedItem].Main,
-            }
-            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-            
-            args = {
-                [1] = "AddIngredientToCauldron",
-                [2] = workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron,
-                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][SelectedItem],
-            }
-            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-            
-            args = {
-                [1] = "FireAllClients",
-                [2] = "EmitParticles",
-                [3] = workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron.Contents.ItemAdded,
-                [4] = {["Duration"] = 0.8}
-            }
-            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-        end
-    end
+    local playerName = getPlayerCauldron()
+    if not playerName then return end
+    
+    local selectedModel = Workspace.Interactions[playerName][SelectedItem]
+    local cauldron = Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron
+    
+    RemoteEvent:FireServer("PickUpItem", selectedModel)
+    RemoteEvent:FireServer("FireAllClients", "WeldItemToHand", selectedModel.Main.GripAttachment, Workspace[game.Players.LocalPlayer.Name].RightHand.RightGripAttachment)
+    RemoteEvent:FireServer("FireAllClients", "UnweldItemFromHand", selectedModel.Main)
+    RemoteEvent:FireServer("AddIngredientToCauldron", cauldron, selectedModel)
+    RemoteEvent:FireServer("FireAllClients", "EmitParticles", cauldron.Contents.ItemAdded, {Duration = 0.8})
 end)
 
 createActionButton("Spawn Potion", UDim2.new(0.1, 0, 0.85, 0), function()
-    for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-        if v.ClassName == "TextLabel" and v.Text == "YOUR CAULDRON" then
-            game:GetService("ReplicatedStorage").RemoteEvent:FireServer("AttemptBottlePotion",workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron)
-        end
+    local playerName = getPlayerCauldron()
+    if playerName then
+        RemoteEvent:FireServer("AttemptBottlePotion", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
     end
 end)
 
 createActionButton("Drain Cauldron", UDim2.new(0.1, 0, 0.95, 0), function()
-    for i,v in pairs(workspace.Interactions:GetChildren()) do
-        game:GetService("ReplicatedStorage").RemoteEvent:FireServer("PickUpPotion", v)
+    for _,v in ipairs(Workspace.Interactions:GetChildren()) do
+        RemoteEvent:FireServer("PickUpPotion", v)
     end
     
-    for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-        if v.ClassName == "TextLabel" and v.Text == "YOUR CAULDRON" then
-            game:GetService("ReplicatedStorage").RemoteEvent:FireServer("AttemptDrainCauldron",workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron)
-        end
+    local playerName = getPlayerCauldron()
+    if playerName then
+        RemoteEvent:FireServer("AttemptDrainCauldron", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
     end
 end)
 
 -- Make GUI draggable
 local UserInputService = game:GetService("UserInputService")
-local dragging
-local dragInput
-local dragStart
-local startPos
+local dragging, dragInput, dragStart, startPos
 
 local function update(input)
     local delta = input.Position - dragStart
@@ -184,11 +155,7 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
+    elseif input == dragInput and dragging then
         update(input)
     end
 end)
