@@ -1,7 +1,15 @@
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
 local PotionRandomizer = Instance.new("TextButton")
+local GoldRandomizer = Instance.new("TextButton")
+local CloseButton = Instance.new("TextButton")
 local Dragging = false
 local DragStart = nil
 local StartPos = nil
@@ -14,7 +22,7 @@ MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
-MainFrame.Size = UDim2.new(0, 200, 0, 100)
+MainFrame.Size = UDim2.new(0, 200, 0, 140)
 
 Title.Name = "Title"
 Title.Parent = MainFrame
@@ -25,6 +33,17 @@ Title.Font = Enum.Font.SourceSansBold
 Title.Text = "Wacky Wizards"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
+
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = Title
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+CloseButton.BorderSizePixel = 0
+CloseButton.Position = UDim2.new(0.9, 0, 0.1, 0)
+CloseButton.Size = UDim2.new(0, 20, 0, 20)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 14
 
 PotionRandomizer.Name = "PotionRandomizer"
 PotionRandomizer.Parent = MainFrame
@@ -37,9 +56,21 @@ PotionRandomizer.Text = "Potion Randomizer: OFF"
 PotionRandomizer.TextColor3 = Color3.fromRGB(255, 255, 255)
 PotionRandomizer.TextSize = 14
 
+GoldRandomizer.Name = "GoldRandomizer"
+GoldRandomizer.Parent = MainFrame
+GoldRandomizer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+GoldRandomizer.BorderSizePixel = 0
+GoldRandomizer.Position = UDim2.new(0.1, 0, 0.7, 0)
+GoldRandomizer.Size = UDim2.new(0.8, 0, 0, 30)
+GoldRandomizer.Font = Enum.Font.SourceSans
+GoldRandomizer.Text = "Gold300300 Randomizer: OFF"
+GoldRandomizer.TextColor3 = Color3.fromRGB(255, 255, 255)
+GoldRandomizer.TextSize = 14
+
 local PotionRandomizerEnabled = false
-SelectedItem = "Brain"
-Items = {}
+local GoldRandomizerEnabled = false
+local Items = {}
+local RemoteEvent = ReplicatedStorage.RemoteEvent
 
 -- Make GUI draggable
 Title.InputBegan:Connect(function(input)
@@ -56,7 +87,7 @@ Title.InputEnded:Connect(function(input)
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement and Dragging then
         local delta = input.Position - DragStart
         MainFrame.Position = UDim2.new(
@@ -68,97 +99,69 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
     end
 end)
 
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
 PotionRandomizer.MouseButton1Click:Connect(function()
     PotionRandomizerEnabled = not PotionRandomizerEnabled
+    GoldRandomizerEnabled = false
+    GoldRandomizer.Text = "Gold300300 Randomizer: OFF"
     PotionRandomizer.Text = "Potion Randomizer: " .. (PotionRandomizerEnabled and "ON" or "OFF")
 end)
 
-while wait() do
-    pcall(function()
-        if PotionRandomizerEnabled == true then
+GoldRandomizer.MouseButton1Click:Connect(function()
+    GoldRandomizerEnabled = not GoldRandomizerEnabled
+    PotionRandomizerEnabled = false
+    PotionRandomizer.Text = "Potion Randomizer: OFF"
+    GoldRandomizer.Text = "Gold300300 Randomizer: " .. (GoldRandomizerEnabled and "ON" or "OFF")
+end)
+
+local function FindPlayerCauldron()
+    for _, v in pairs(Workspace.PlayerCauldrons:GetDescendants()) do
+        if v.ClassName == "TextLabel" and v.Text == "YOUR CAULDRON" then
+            return v.Parent.Parent.Parent.Name
+        end
+    end
+    return nil
+end
+
+spawn(function()
+    while wait(0.1) do
+        if not (PotionRandomizerEnabled or GoldRandomizerEnabled) then continue end
+        
+        pcall(function()
+            local playerName
+            if PotionRandomizerEnabled then
+                playerName = FindPlayerCauldron()
+            else
+                playerName = "gold300300"
+            end
+            
+            if not playerName then return end
+            
+            -- Collect items
             Items = {}
-            for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-                if v.ClassName == "TextLabel" then
-                    if v.Text == "YOUR CAULDRON" then
-                        for i,v1 in pairs(game:GetService("Workspace").Interactions[v.Parent.Parent.Parent.Name]:GetChildren()) do
-                            if v1.ClassName == "Model" then
-                                table.insert(Items,v1.Name)
-                            end
-                        end
-                    end
+            for _, v in pairs(Workspace.Interactions[playerName]:GetChildren()) do
+                if v.ClassName == "Model" then
+                    table.insert(Items, v.Name)
                 end
             end
             
-            for i,v1 in pairs(Items) do
-                local randomnumber = math.random(1,i)
-                for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-                    if v.ClassName == "TextLabel" then
-                        if v.Text == "YOUR CAULDRON" then
-                            local args = {
-                                [1] = "PickUpItem",
-                                [2] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]],
-                            }
-                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-                            
-                            local args = {
-                                [1] = "FireAllClients",
-                                [2] = "WeldItemToHand",
-                                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]].Main.GripAttachment,
-                                [4] = workspace[game.Players.LocalPlayer.Name].RightHand.RightGripAttachment,
-                            }
-                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-                            
-                            local args = {
-                                [1] = "FireAllClients",
-                                [2] = "UnweldItemFromHand",
-                                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]].Main,
-                            }
-                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-                            
-                            local args = {
-                                [1] = "AddIngredientToCauldron",
-                                [2] = workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron,
-                                [3] = workspace.Interactions[v.Parent.Parent.Parent.Name][Items[randomnumber]],
-                            }
-                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-                            
-                            local args = {
-                                [1] = "FireAllClients",
-                                [2] = "EmitParticles",
-                                [3] = workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron.Contents.ItemAdded,
-                                    [4] = {
-                                    ["Duration"] = 0.8,
-                                },
-                            }
-                            game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-                        end
-                    end
-                end
-            end
-            wait(3)
-            for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-                if v.ClassName == "TextLabel" then
-                    if v.Text == "YOUR CAULDRON" then
-                        game:GetService("ReplicatedStorage").RemoteEvent:FireServer("AttemptBottlePotion",workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron)
-                    end
-                end
-            end
-            wait(3)
-            for i,v in pairs(workspace.Interactions:GetChildren()) do
-                local args = {
-                    [1] = "PickUpPotion",
-                    [2] = v,
-                }
+            -- Add random ingredients
+            for i, _ in pairs(Items) do
+                local randomItem = Items[math.random(1, i)]
+                local itemPath = Workspace.Interactions[playerName][randomItem]
+                local cauldronPath = Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron
                 
-                game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+                RemoteEvent:FireServer("PickUpItem", itemPath)
+                RemoteEvent:FireServer("FireAllClients", "WeldItemToHand", itemPath.Main.GripAttachment, Workspace[LocalPlayer.Name].RightHand.RightGripAttachment)
+                RemoteEvent:FireServer("FireAllClients", "UnweldItemFromHand", itemPath.Main)
+                RemoteEvent:FireServer("AddIngredientToCauldron", cauldronPath, itemPath)
+                RemoteEvent:FireServer("FireAllClients", "EmitParticles", cauldronPath.Contents.ItemAdded, {Duration = 0.8})
             end
-            for i,v in pairs(game:GetService("Workspace").PlayerCauldrons:GetDescendants()) do
-                if v.ClassName == "TextLabel" then
-                    if v.Text == "YOUR CAULDRON" then
-                        game:GetService("ReplicatedStorage").RemoteEvent:FireServer("AttemptDrainCauldron",workspace.PlayerCauldrons[v.Parent.Parent.Parent.Name].CauldronSet.Cauldron)
-                    end
-                end
-            end
-        end
-    end)
-end
+            
+            wait(3)
+        end)
+    end
+end)
