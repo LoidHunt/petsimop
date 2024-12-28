@@ -1,19 +1,18 @@
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local PotionRandomizer = Instance.new("TextButton")
-local Dragging = false
-local DragStart = nil
-local StartPos = nil
-
--- Cache services
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local PotionRandomizer = Instance.new("TextButton")
+local CloseButton = Instance.new("TextButton")
+local Dragging = false
+local DragStart = nil
+local StartPos = nil
+
 ScreenGui.Parent = game.CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -34,6 +33,17 @@ Title.Text = "Wacky Wizards"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = Title
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+CloseButton.BorderSizePixel = 0
+CloseButton.Position = UDim2.new(0.9, 0, 0.1, 0)
+CloseButton.Size = UDim2.new(0, 20, 0, 20)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 14
+
 PotionRandomizer.Name = "PotionRandomizer"
 PotionRandomizer.Parent = MainFrame
 PotionRandomizer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -45,27 +55,11 @@ PotionRandomizer.Text = "Potion Randomizer: OFF"
 PotionRandomizer.TextColor3 = Color3.fromRGB(255, 255, 255)
 PotionRandomizer.TextSize = 14
 
--- Variables
 local PotionRandomizerEnabled = false
-local Dragging = false
-local DragStart
-local StartPos
 local Items = {}
 local RemoteEvent = ReplicatedStorage.RemoteEvent
 
--- Dragging functionality
-local function UpdateDrag(input)
-    if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - DragStart
-        MainFrame.Position = UDim2.new(
-            StartPos.X.Scale,
-            StartPos.X.Offset + delta.X,
-            StartPos.Y.Scale,
-            StartPos.Y.Offset + delta.Y
-        )
-    end
-end
-
+-- Make GUI draggable
 Title.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         Dragging = true
@@ -80,28 +74,36 @@ Title.InputEnded:Connect(function(input)
     end
 end)
 
-UserInputService.InputChanged:Connect(UpdateDrag)
-
--- Helper functions
-local function FindPlayerCauldron()
-    for _, v in ipairs(Workspace.PlayerCauldrons:GetDescendants()) do
-        if v.ClassName == "TextLabel" and v.Text == "YOUR CAULDRON" then
-            return v.Parent.Parent.Parent.Name
-        end
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and Dragging then
+        local delta = input.Position - DragStart
+        MainFrame.Position = UDim2.new(
+            StartPos.X.Scale, 
+            StartPos.X.Offset + delta.X,
+            StartPos.Y.Scale, 
+            StartPos.Y.Offset + delta.Y
+        )
     end
-end
+end)
 
-local function FireRemote(...)
-    RemoteEvent:FireServer(...)
-end
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
 
--- Main functionality
 PotionRandomizer.MouseButton1Click:Connect(function()
     PotionRandomizerEnabled = not PotionRandomizerEnabled
     PotionRandomizer.Text = "Potion Randomizer: " .. (PotionRandomizerEnabled and "ON" or "OFF")
 end)
 
--- Main loop
+local function FindPlayerCauldron()
+    for _, v in pairs(Workspace.PlayerCauldrons:GetDescendants()) do
+        if v.ClassName == "TextLabel" and v.Text == "YOUR CAULDRON" then
+            return v.Parent.Parent.Parent.Name
+        end
+    end
+    return nil
+end
+
 spawn(function()
     while wait(0.1) do
         if not PotionRandomizerEnabled then continue end
@@ -112,38 +114,34 @@ spawn(function()
             
             -- Collect items
             Items = {}
-            for _, v in ipairs(Workspace.Interactions[playerName]:GetChildren()) do
+            for _, v in pairs(Workspace.Interactions[playerName]:GetChildren()) do
                 if v.ClassName == "Model" then
                     table.insert(Items, v.Name)
                 end
             end
             
             -- Add random ingredients
-            for i, _ in ipairs(Items) do
+            for i, _ in pairs(Items) do
                 local randomItem = Items[math.random(1, i)]
                 local itemPath = Workspace.Interactions[playerName][randomItem]
                 local cauldronPath = Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron
                 
-                FireRemote("PickUpItem", itemPath)
-                FireRemote("FireAllClients", "WeldItemToHand", itemPath.Main.GripAttachment, Workspace[LocalPlayer.Name].RightHand.RightGripAttachment)
-                FireRemote("FireAllClients", "UnweldItemFromHand", itemPath.Main)
-                FireRemote("AddIngredientToCauldron", cauldronPath, itemPath)
-                FireRemote("FireAllClients", "EmitParticles", cauldronPath.Contents.ItemAdded, {Duration = 0.8})
+                RemoteEvent:FireServer("PickUpItem", itemPath)
+                RemoteEvent:FireServer("FireAllClients", "WeldItemToHand", itemPath.Main.GripAttachment, Workspace[LocalPlayer.Name].RightHand.RightGripAttachment)
+                RemoteEvent:FireServer("FireAllClients", "UnweldItemFromHand", itemPath.Main)
+                RemoteEvent:FireServer("AddIngredientToCauldron", cauldronPath, itemPath)
+                RemoteEvent:FireServer("FireAllClients", "EmitParticles", cauldronPath.Contents.ItemAdded, {Duration = 0.8})
             end
             
             wait(3)
-            
-            -- Bottle potion
-            FireRemote("AttemptBottlePotion", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
+            RemoteEvent:FireServer("AttemptBottlePotion", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
             
             wait(3)
-            
-            -- Pickup and drain
-            for _, v in ipairs(Workspace.Interactions:GetChildren()) do
-                FireRemote("PickUpPotion", v)
+            for _, v in pairs(Workspace.Interactions:GetChildren()) do
+                RemoteEvent:FireServer("PickUpPotion", v)
             end
             
-            FireRemote("AttemptDrainCauldron", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
+            RemoteEvent:FireServer("AttemptDrainCauldron", Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron)
         end)
     end
 end)
