@@ -13,6 +13,7 @@ local BlacklistFrame = Instance.new("Frame")
 local BlacklistScrollFrame = Instance.new("ScrollingFrame")
 local BlacklistLayout = Instance.new("UIListLayout")
 local CloseButton = Instance.new("TextButton")
+local SearchBox = Instance.new("TextBox")
 local Dragging = false
 local DragStart = nil
 local StartPos = nil
@@ -66,7 +67,7 @@ BlacklistButton.BorderSizePixel = 0
 BlacklistButton.Position = UDim2.new(0.1, 0, 0.7, 0)
 BlacklistButton.Size = UDim2.new(0.8, 0, 0, 30)
 BlacklistButton.Font = Enum.Font.SourceSans
-BlacklistButton.Text = "Черный список"
+BlacklistButton.Text = "Blacklist"
 BlacklistButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 BlacklistButton.TextSize = 14
 
@@ -78,10 +79,23 @@ BlacklistFrame.Position = UDim2.new(1.1, 0, 0, 0)
 BlacklistFrame.Size = UDim2.new(0, 150, 0, 200)
 BlacklistFrame.Visible = false
 
+SearchBox.Name = "SearchBox"
+SearchBox.Parent = BlacklistFrame
+SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SearchBox.BorderSizePixel = 0
+SearchBox.Position = UDim2.new(0, 5, 0, 5)
+SearchBox.Size = UDim2.new(1, -10, 0, 25)
+SearchBox.Font = Enum.Font.SourceSans
+SearchBox.PlaceholderText = "Search..."
+SearchBox.Text = ""
+SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchBox.TextSize = 14
+
 BlacklistScrollFrame.Name = "BlacklistScrollFrame"
 BlacklistScrollFrame.Parent = BlacklistFrame
 BlacklistScrollFrame.BackgroundTransparency = 1
-BlacklistScrollFrame.Size = UDim2.new(1, 0, 1, 0)
+BlacklistScrollFrame.Position = UDim2.new(0, 0, 0, 35)
+BlacklistScrollFrame.Size = UDim2.new(1, 0, 1, -35)
 BlacklistScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 BlacklistScrollFrame.ScrollBarThickness = 6
 BlacklistScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -141,22 +155,31 @@ local function UpdateBlacklistUI(items)
         end
     end
     
+    local searchText = SearchBox.Text:lower()
     for _, itemName in pairs(items) do
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, -10, 0, 25)
-        button.Position = UDim2.new(0, 5, 0, 0)
-        button.BackgroundColor3 = BlacklistedItems[itemName] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(40, 40, 40)
-        button.BorderSizePixel = 0
-        button.Text = itemName
-        button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        button.Parent = BlacklistScrollFrame
-        
-        button.MouseButton1Click:Connect(function()
-            BlacklistedItems[itemName] = not BlacklistedItems[itemName]
+        if searchText == "" or string.find(itemName:lower(), searchText) then
+            local button = Instance.new("TextButton")
+            button.Size = UDim2.new(1, -10, 0, 25)
+            button.Position = UDim2.new(0, 5, 0, 0)
             button.BackgroundColor3 = BlacklistedItems[itemName] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(40, 40, 40)
-        end)
+            button.BorderSizePixel = 0
+            button.Text = itemName
+            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            button.Parent = BlacklistScrollFrame
+            
+            button.MouseButton1Click:Connect(function()
+                BlacklistedItems[itemName] = not BlacklistedItems[itemName]
+                button.BackgroundColor3 = BlacklistedItems[itemName] and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(40, 40, 40)
+            end)
+        end
     end
 end
+
+SearchBox.Changed:Connect(function(prop)
+    if prop == "Text" then
+        UpdateBlacklistUI(Items)
+    end
+end)
 
 local function FindPlayerCauldron()
     for _, v in pairs(Workspace.PlayerCauldrons:GetDescendants()) do
