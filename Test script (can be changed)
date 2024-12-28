@@ -105,7 +105,18 @@ BlacklistLayout.Padding = UDim.new(0, 2)
 
 local PotionRandomizerEnabled = false
 local Items = {}
-local BlacklistedItems = {}
+local BlacklistedItems = {
+    ["Acid Barrel"] = true,
+    ["Paintbrush"] = true,
+    ["Gun"] = true,
+    ["Beans"] = true,
+    ["Rotten Sandwich"] = true,
+    ["Honey"] = true,
+    ["Dynamite"] = true,
+    ["Chilli"] = true,
+    ["Mushroom"] = true,
+    ["Egyptian Head"] = true
+}
 local RemoteEvent = ReplicatedStorage.RemoteEvent
 
 -- Make GUI draggable
@@ -190,17 +201,6 @@ local function FindPlayerCauldron()
     return nil
 end
 
-local function HasItem(itemPath)
-    local character = LocalPlayer.Character
-    if not character then return false end
-    
-    local backpack = LocalPlayer:FindFirstChild("Backpack")
-    if not backpack then return false end
-    
-    -- Check if item is in character or backpack
-    return character:FindFirstChild(itemPath.Name) ~= nil or backpack:FindFirstChild(itemPath.Name) ~= nil
-end
-
 spawn(function()
     while wait(0.1) do
         if not PotionRandomizerEnabled then continue end
@@ -209,21 +209,19 @@ spawn(function()
             local playerName = FindPlayerCauldron()
             if not playerName then return end
             
-            -- Collect items that player owns
+            -- Collect items
             Items = {}
             for _, v in pairs(Workspace.Interactions[playerName]:GetChildren()) do
-                if v.ClassName == "Model" and not BlacklistedItems[v.Name] and HasItem(v) then
+                if v.ClassName == "Model" and not BlacklistedItems[v.Name] then
                     table.insert(Items, v.Name)
                 end
             end
             
-            if #Items == 0 then return end -- Skip if no owned items found
-            
             UpdateBlacklistUI(Items)
             
-            -- Add random ingredients from owned items
+            -- Add random ingredients
             for i, _ in pairs(Items) do
-                local randomItem = Items[math.random(1, #Items)]
+                local randomItem = Items[math.random(1, i)]
                 local itemPath = Workspace.Interactions[playerName][randomItem]
                 local cauldronPath = Workspace.PlayerCauldrons[playerName].CauldronSet.Cauldron
                 
